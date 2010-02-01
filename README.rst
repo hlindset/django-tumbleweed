@@ -32,6 +32,11 @@ Tumbleweed also includes paginated date-based tumble views:
     - ``/tumble/2009/jan/``
     - ``/tumble/2009/jan/01/``
 
+Pagination can either be supplied as part of the URL or as a GET-parameter.
+
+    - ``/tumble/2009/page/2/
+    - ``/tumble/2009/?page=2
+
 If you have ``/admin/doc/`` enabled in your root urlconf, each of the tumbleweed
 views is documented.
 
