@@ -94,6 +94,28 @@ views.
 Tumbleweed's date-based views are just thin wrappers around the main tumble
 view and show how to customize the tumble view.
 
+Tumbleweed template tags
+========================
+
+Tumbleweed also has a template tag for retrieving latest tumbles::
+
+    {% load tumbleweed %}
+    {% get_latest_tumbles 5 as latest_tumbles %}
+    
+    {% for tumble in latest_tumbles %}
+        {{ tumble.title }}
+    {% endfor %}
+
+By default the tag will sort the tumbles by the field ``pub_date``, but you
+can override this with the setting ``TUMBLEWEED_TEMPLATETAG_DATE_FIELD``. You
+can also filter the results with the setting ``TUMBLEWEED_TEMPLATETAG_FILTER``::
+
+    TUMBLEWEED_TEMPLATETAG_DATE_FIELD = 'published_date'
+    TUMBLEWEED_TEMPLATETAG_FILTER = {'title__exact': 'Hello world!'}
+
+Using those settings, tumbleweed would sort it by ``published_date`` and only
+show entries with the title "Hello world!"
+
 TODO
 ====
 
