@@ -94,8 +94,8 @@ views.
 Tumbleweed's date-based views are just thin wrappers around the main tumble
 view and show how to customize the tumble view.
 
-Tumbleweed template tags
-========================
+Tumbleweed template tag
+=======================
 
 Tumbleweed also has a template tag for retrieving latest tumbles::
 
