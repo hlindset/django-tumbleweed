@@ -5,15 +5,18 @@ from haystack.query import SearchQuerySet
 
 register = template.Library()
 
-TAG_FILTER  = getattr(settings, 'TUMBLEWEED_TAG_FILTER', None)
-TAG_DATE_FIELD = getattr(settings, 'TUMBLEWEED_TAG_DATE_FIELD', 'pub_date')
+TAG_FILTER = getattr(settings, 'TUMBLEWEED_TEMPLATETAG_FILTER', None)
+TAG_EXCLUDE = getattr(settings, 'TUMBLEWEED_TEMPLATETAG_EXCLUDE', None)
+TAG_DATE_FIELD = getattr(settings, 'TUMBLEWEED_TEMPLATETAG_DATE_FIELD', 'pub_date')
 
 class LatestTumblesNode(template.Node):
     def __init__(self, tumble_count, var_name):
         self.tumble_count = tumble_count
         self.var_name = var_name
     def render(self, context):
-        sqs = SearchQuerySet().all()
+        sqs = SearchQuerySet()
+        if TAG_EXCLUDE is not None:
+            sqs = sqs.exclude(**TAG_EXCLUDE)
         if TAG_FILTER is not None:
             sqs = sqs.filter(**TAG_FILTER)
         sqs = sqs.order_by('-%s' % TAG_DATE_FIELD)[:self.tumble_count]

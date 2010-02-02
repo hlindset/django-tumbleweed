@@ -106,15 +106,18 @@ Tumbleweed also has a template tag for retrieving latest tumbles::
         {{ tumble.title }}
     {% endfor %}
 
-By default the tag will sort the tumbles by the field ``pub_date``, but you
-can override this with the setting ``TUMBLEWEED_TEMPLATETAG_DATE_FIELD``. You
-can also filter the results with the setting ``TUMBLEWEED_TEMPLATETAG_FILTER``::
+By default the tag will sort the tumbles using the field ``pub_date``, but you
+can override this with the setting ``TUMBLEWEED_TEMPLATETAG_DATE_FIELD``::
 
     TUMBLEWEED_TEMPLATETAG_DATE_FIELD = 'published_date'
-    TUMBLEWEED_TEMPLATETAG_FILTER = {'title__exact': 'Hello world!'}
 
-Using those settings, tumbleweed would sort it by ``published_date`` and only
-show entries with the title "Hello world!"
+You can filter the query with ``TUMBLEWEED_TEMPLATETAG_FILTER``::
+
+    TUMBLEWEED_TEMPLATETAG_FILTER = {'title__exact': 'Hello world!'}
+    
+And exclude entries with ``TUMBLEWEED_TEMPLATETAG_EXCLUDE``::
+
+    TUMBLEWEED_TEMPLATETAG_EXCLUDE = {'title__exact': 'Hello there.'}
 
 TODO
 ====
