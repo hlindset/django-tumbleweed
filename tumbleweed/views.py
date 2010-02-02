@@ -1,6 +1,6 @@
 from django.shortcuts import render_to_response
 from django.template.context import RequestContext
-from django.core.paginator import Paginator
+from django.core.paginator import Paginator, EmptyPage, InvalidPage
 from django.http import Http404, HttpResponseServerError
 from haystack.query import SearchQuerySet
 from django.conf import settings
@@ -39,7 +39,8 @@ def tumble(request, date_field='pub_date', template_name='tumbleweed/tumble.html
             to ``extra_context`` included in Django's generic views.
         
         page
-            Which page to display. Can be passed as the GET-parameter 'page' instead.
+            Which page to display. Can be passed as part of the URL or as the
+            GET-parameter 'page'. Default: ``1``
     
     Template context:
     
@@ -57,7 +58,7 @@ def tumble(request, date_field='pub_date', template_name='tumbleweed/tumble.html
     .. _Paginator: http://docs.djangoproject.com/en/dev/topics/pagination/
     """
 
-    if not searchqueryset:
+    if searchqueryset is None:
         searchqueryset = SearchQuerySet().all()
     things = searchqueryset.order_by('-%s' % date_field)
 
@@ -67,6 +68,9 @@ def tumble(request, date_field='pub_date', template_name='tumbleweed/tumble.html
         page = paginator.page(int(request.GET.get('page', False) or page))
     except ValueError:
         raise Http404
+    except (EmptyPage, InvalidPage):
+        # TODO: Perhaps return the last valid page instead?
+        raise Http404
 
     context_dict = {
         'page': page,
@@ -75,7 +79,7 @@ def tumble(request, date_field='pub_date', template_name='tumbleweed/tumble.html
     context_dict.update(extra_context)
     return render_to_response(template_name, context_dict, context_instance=context_class(request))
 
-def archive_year(request, year, searchqueryset=None, date_field='pub_date', page=1,
+def archive_year(request, year, searchqueryset=None, date_field='pub_date',
     template_name='tumbleweed/tumble_archive_year.html', **kwargs):
     """
     A paginated list of tumbled item for a given year.
@@ -111,7 +115,8 @@ def archive_year(request, year, searchqueryset=None, date_field='pub_date', page
             to ``extra_context`` included in Django's generic views.
         
         page
-            Which page to display. Can be passed as the GET-parameter 'page' instead.
+            Which page to display. Can be passed as part of the URL or as the
+            GET-parameter 'page'. Default: ``1``
         
     Template context:
 
@@ -122,6 +127,9 @@ def archive_year(request, year, searchqueryset=None, date_field='pub_date', page
             The Paginator_ for access to information about the paginated list
             for creating next/previous links, showing the total number of
             tumbled items, etc.
+        
+        year
+            The given year, as a four-character string.
     
     .. _haystack: http://haystacksearch.org/
     .. _SearchQuerySet: http://haystacksearch.org/docs/searchqueryset_api.html
@@ -130,7 +138,7 @@ def archive_year(request, year, searchqueryset=None, date_field='pub_date', page
     """
     if not searchqueryset:
         searchqueryset = SearchQuerySet().all()
-
+    
     try:
         year = int(year)
     except ValueError:
@@ -141,9 +149,16 @@ def archive_year(request, year, searchqueryset=None, date_field='pub_date', page
         '%s__gte' % date_field: datetime.datetime(year, 1, 1),
         '%s__lte' % date_field: datetime.datetime(year, 12, 31, 23, 59, 59)
     }
-    return tumble(request, searchqueryset=searchqueryset.filter(**lookup_kwargs), page=page, template_name=template_name, **kwargs)
+    
+    # Adding string year to extra_context
+    date_context = {'year': year}
+    try:
+        kwargs['extra_context'].update(date_context)
+    except KeyError:
+        kwargs['extra_context'] = date_context
+    return tumble(request, searchqueryset=searchqueryset.filter(**lookup_kwargs), template_name=template_name, **kwargs)
 
-def archive_month(request, year, month, searchqueryset=None, date_field='pub_date', month_format='%b', page=1,
+def archive_month(request, year, month, searchqueryset=None, date_field='pub_date', month_format='%b',
     template_name='tumbleweed/tumble_archive_month.html', **kwargs):
     """
     A paginated list of tumbled item for a given month.
@@ -185,7 +200,8 @@ def archive_month(request, year, month, searchqueryset=None, date_field='pub_dat
             to ``extra_context`` included in Django's generic views.
         
         page
-            Which page to display. Can be passed as the GET-parameter 'page' instead.
+            Which page to display. Can be passed as part of the URL or as the
+            GET-parameter 'page'. Default: ``1``
         
     Template context:
 
@@ -196,6 +212,9 @@ def archive_month(request, year, month, searchqueryset=None, date_field='pub_dat
             The Paginator_ for access to information about the paginated list
             for creating next/previous links, showing the total number of
             tumbled items, etc.
+        
+        month
+            A ``datetime.date`` object representing the given month.
     
     .. _date formatting: http://docs.djangoproject.com/en/dev/ref/templates/builtins/#now
     .. _haystack: http://haystacksearch.org/
@@ -227,10 +246,17 @@ def archive_month(request, year, month, searchqueryset=None, date_field='pub_dat
         '%s__gte' % date_field: first_day,
         '%s__lt' % date_field: last_day,
     }
-    return tumble(request, searchqueryset=searchqueryset.filter(**lookup_kwargs), page=page, template_name=template_name, **kwargs)
+    
+    # Adding datetime.date object month to extra_context
+    date_context = {'month': datetime.date(date.year, date.month, 1)}
+    try:
+        kwargs['extra_context'].update(date_context)
+    except KeyError:
+        kwargs['extra_context'] = date_context
+    return tumble(request, searchqueryset=searchqueryset.filter(**lookup_kwargs), template_name=template_name, **kwargs)
 
 def archive_day(request, year, month, day, searchqueryset=None, date_field='pub_date', month_format='%b', day_format='%d',
-    page=1, template_name='tumbleweed/tumble_archive_day.html', **kwargs):
+    template_name='tumbleweed/tumble_archive_day.html', **kwargs):
     """
     A paginated list of tumbled item for a given month.
 
@@ -276,7 +302,8 @@ def archive_day(request, year, month, day, searchqueryset=None, date_field='pub_
             to ``extra_context`` included in Django's generic views.
         
         page
-            Which page to display. Can be passed as the GET-parameter 'page' instead.
+            Which page to display. Can be passed as part of the URL or as the
+            GET-parameter 'page'. Default: ``1``
 
     Template context:
 
@@ -287,6 +314,9 @@ def archive_day(request, year, month, day, searchqueryset=None, date_field='pub_
             The Paginator_ for access to information about the paginated list
             for creating next/previous links, showing the total number of
             tumbled items, etc.
+        
+        day
+            A ``datetime.date`` object representing the given day.
 
     .. _date formatting: http://docs.djangoproject.com/en/dev/ref/templates/builtins/#now
     .. _haystack: http://haystacksearch.org/
@@ -309,4 +339,11 @@ def archive_day(request, year, month, day, searchqueryset=None, date_field='pub_
         '%s__gte' % date_field: datetime.datetime.combine(date, datetime.time.min),
         '%s__lte' % date_field: datetime.datetime.combine(date, datetime.time.max)
     }
-    return tumble(request, searchqueryset=searchqueryset.filter(**lookup_kwargs), page=page, template_name=template_name, **kwargs)
+    
+    # Adding datetime.date object month to extra_context
+    date_context = {'day': datetime.date(date.year, date.month, date.day)}
+    try:
+        kwargs['extra_context'].update(date_context)
+    except KeyError:
+        kwargs['extra_context'] = date_context
+    return tumble(request, searchqueryset=searchqueryset.filter(**lookup_kwargs), template_name=template_name, **kwargs)
