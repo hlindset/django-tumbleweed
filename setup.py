@@ -8,6 +8,6 @@ setup(name='tumbleweed',
       author='Matt Croydon',
       author_email='mcroydon@gmail.com',
       url='http://postneo.com/',
-      packages=['tumbleweed'],
+      packages=['tumbleweed', 'tumbleweed.templatetags'],
       package_dir={'tumbleweed': 'tumbleweed'},
      )
